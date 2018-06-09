@@ -55,18 +55,18 @@ function _tox_base() {
         # found the .tox file
         if [ -f $D/$TOX_RC ]; then
             . $D/$TOX_RC
+            if [[ $1 == "" ]]; then
+                TOX_BASE=$D
+                return
+            fi
             if [[ "$TOX_POINT" == "$1"  ]]; then
                 TOX_BASE=$D
                 return
             fi
         fi
-        # already reached the HOME dir without found the .tox file
-        if [[ $D == "$HOME" ]]; then
-            break
-        fi
 
         if [[ $D == "/" ]]; then
-            D=$HOME
+            TOX_BASE=$HOME
             break
         fi
         D=`dirname $D`
