@@ -1,0 +1,5 @@
+_TOX_VERSION=0.0.0
+_TOX_HOME=$HOME
+_TOX_RC=.toxrc
+_TOX_DIR=$_TOX_HOME/.tox
+_TOX_MAP_FILE=$_TOX_DIR/map.tox

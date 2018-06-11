@@ -8,7 +8,7 @@
 # tox 
 
 TOX_BASE=$HOME
-TOX_RC=.tox
+
 TOX_SEARCH_RESULT=()
 TOX_FIND=
 
@@ -21,6 +21,7 @@ function _tox_absolute() {
         echo "tox: permission denied: $1"
         return 0
     fi
+    echo $1
     cd $1
     return 1
 }
@@ -45,6 +46,7 @@ function _tox_relative() {
         echo "tox: permission denied: $1"
         return 0
     fi
+    echo "$1"
     cd $1
     return 1
 }
@@ -56,17 +58,17 @@ function _tox_base() {
         if [ -f $D/$TOX_RC ]; then
             . $D/$TOX_RC
             if [[ $1 == "" ]]; then
-                TOX_BASE=$D
+                _TOX_BASE=$D
                 return
             fi
             if [[ "$TOX_POINT" == "$1"  ]]; then
-                TOX_BASE=$D
+                _TOX_BASE=$D
                 return
             fi
         fi
 
         if [[ $D == "/" ]]; then
-            TOX_BASE=$HOME
+            _TOX_BASE=$HOME
             break
         fi
         D=`dirname $D`
@@ -74,8 +76,8 @@ function _tox_base() {
 }
 
 function _tox_rc() {
-    if [ -f $TOX_BASE/$TOX_RC ]; then
-        . $TOX_BASE/$TOX_RC 
+    if [ -f $_TOX_BASE/$TOX_RC ]; then
+        . $_TOX_BASE/$TOX_RC 
     fi
 }
 
@@ -108,9 +110,9 @@ function _tox_search() {
     local LIST=()
     _tox_find
     # find $2 -type d -name "*$DIR*"
-    find $2 `echo $TOX_FIND` -type d -name "*$DIR*" -print | while read line; do
+    while read -r line; do
         LIST+=("$line")
-    done
+    done < <(find $2 `echo $TOX_FIND` -type d -name "*$DIR*" -print)
 
     if [ ${#LIST[@]} -eq 0 ]; then
         TOX_SEARCH_RESULT=()
@@ -186,30 +188,11 @@ function _tox_goto() {
     fi
 }
 
-function _tox_init() {
-    # to create a .tox file in home dir if it not exists
-    if [ ! -f $1 ]; then
-        touch $1
-        echo '# setting ignore files' >> $1
-        echo "TOX_POINT=\"$2\"" >> $1
-        echo 'TOX_POINT_MAP=""' >> $1
-        echo 'TOX_IGNORE="node_modules,logs,.*"' >> $1
-        return 1
-    fi
-    return 0
-}
 
 function tox() {
-    _tox_init $HOME/$TOX_RC "@@"
-
-    if [[ $1 == '@@' ]]; then
-        _tox_init $PWD/$TOX_RC $2
-        return
-    fi
-
     if [ $# -eq 0 ]; then
         _tox_base
-        _tox_absolute $TOX_BASE
+        _tox_absolute $_TOX_BASE
         return
     fi
 
@@ -221,14 +204,14 @@ function tox() {
     if [[ $1 == @* ]]; then
         _tox_base ${1:1}
         if [ $# -eq 1 ]; then
-            _tox_absolute $TOX_BASE
+            _tox_absolute $_TOX_BASE
             return
         else
-            _tox_goto $2 $TOX_BASE
+            _tox_goto $2 $_TOX_BASE
         fi
         return
     fi
 
     _tox_base
-    _tox_goto $1 $TOX_BASE
+    _tox_goto $1 $_TOX_BASE
 }
