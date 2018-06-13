@@ -100,15 +100,6 @@ function _toxc_util_valid_point_name() {
     return 1
 }
 
-function _toxc_get_config() {
-    while read line; do
-        key=`_toxc_util_key "$line"`
-        if [[ "$2" == "$key" ]]; then
-            echo `_toxc_util_value "$line"`
-        fi
-    done < <(_toxc_util_read_file "$1")
-}
-
 # _toxc_util_read_file - to read file by line and to skip blank line and comment (lines start with #)
 # $1 path of file
 function _toxc_util_read_file() {
@@ -323,6 +314,7 @@ function _toxc_init() {
         echo '# setting ignore files' >> "$1"
         echo "point=$2" >> "$1"
         echo 'ignore=node_modules,logs,.*' >> "$1"
+        echo 'editor=vim' >> "$1"
         return 0
     fi
 }
@@ -672,5 +664,199 @@ function tox() {
     else
         local nearest=`_toxc_point_nearest_point "$PWD"`
         _tox_to "$nearest" "$1"
+    fi
+}
+
+#################################################################################
+# toxe
+#################################################################################
+function _toxe_e() {
+    local editor=`_toxc_point_item "$_TOX_HOME_RC" "editor"`
+    eval "$editor $1"
+}
+
+function _toxe_search() {
+    local D=`basename "$2"`
+    local prune=""
+
+    while read line; do
+        if [[ "$line" == */* ]]; then
+            prune+=" -type d -path $line -prune -o " 
+        else
+            prune+=" -type d -name $line -prune -o "
+        fi
+    done < <(_toxc_point_get_ignore "$1")
+
+    while read -r line; do
+        echo "$line"
+    done < <(find "$1" `echo $prune` -type f -name "*$D*" -print)
+}
+
+function _toxe_o() {
+    # if the target path is a absolute path, just try cd to the path.
+    if [[ "$2" == /* ]]; then
+        _toxe_e "$2"
+        return 0
+    fi
+
+    local p="$1/$2"
+    local best
+
+    if [ -f "$p" ]; then
+        best="$p" 
+    fi
+
+    local results=()
+
+    local i=0
+    while read -r line; do
+        if [[ ! "$line" == "$best" ]] && [[ ! "$line" == "$1" ]]; then
+            i=$(expr ${i} + 1)
+            results[$i]="$line"
+        fi
+    done < <(_toxe_search "$1" "$2")
+
+    if [[ "$best" == "" ]] && [ ${#results[@]} -eq 0 ]; then
+        echo "$_TOX_ECHO_PRE: no matched file: $2"
+        return 1 
+    fi
+
+    if [[ "$best" == "" ]] && [ ${#results[@]} -eq 1 ]; then
+        _toxe_e "${results[1]}"
+        return 0
+    fi
+
+    if [[ ! "$best" == "" ]] && [ ${#results[@]} -eq 0 ]; then
+        _toxe_e "$best" 
+        return 0
+    fi
+
+    local PATH_L=${#1}
+    local PREFIX_L=$(expr $PATH_L + 1)
+
+    local tag=""
+
+    if [[ ! $3 == "" ]]; then
+        tag="$(tput setaf 4)$3$(tput sgr0)/" 
+    fi
+
+    if [[ ! "$best" == "" ]]; then
+        echo "$(tput setaf 3)*:$(tput sgr0) $tag$(tput setaf 3)${best:${PREFIX_L}}$(tput sgr0)"
+    fi
+
+    i=0
+    for item in ${results[@]}; do
+        i=$(expr ${i} + 1)
+        local index="$(tput setaf 1)$i$(tput sgr0): "
+        local res=`echo $tag${results[$i]:${PREFIX_L}} | sed "s/$2/$(tput setaf 2)&$(tput sgr0)/g"`
+        echo "$index$res"
+    done
+
+    printf "$(tput setaf 4)choose the dir with index: $(tput sgr0)(empty means the first one)"
+    read -r index
+
+    if [[ "$index" == "" ]]; then
+        if [[ ! "$best" == "" ]]; then
+            _toxe_e "$best" 
+            return 0
+        fi
+        _toxe_e "${results[1]}"
+        return 0
+    fi
+
+    if [ $index -le ${#results[@]} ]; then
+        _toxe_e "${results[$index]}"
+        return 0
+    fi
+
+    echo "$_TOX_ECHO_PRE: no matching item"
+    return 1
+}
+
+function toxe() {
+    if [ $# -eq 0 ]; then
+        _toxe_e "$PWD"
+        return
+    fi
+
+    if [[ "$1" == @* ]]; then
+        nearest=`_toxc_point_nearest_point "$PWD" "$1"`
+
+        local i=0
+        while read line; do
+            if [[ ! "$line" == "$nearest" ]]; then
+                i=$(expr ${i} + 1)
+                list[$i]="$line"
+            fi
+        done < <(_toxc_map_seek "$1")
+
+        if [[ "$nearest" == "" ]] && [ ${#list[@]} -eq 0 ]; then
+            echo "$_TOX_ECHO_PRE: point $1 not exists"
+            return 1
+        fi
+
+        local selected
+
+        if [ ${#list[@]} -eq 0 ]; then
+            # if the nearest point dir is the only result, cd to the neareast point dir
+            if [[ ! "$nearest" == "" ]]; then
+                selected="$nearest"
+            fi
+        elif [ ${#list[@]} -eq 1 ]; then
+            # if there is only one result, cd to the dir directly
+            if [[ "$nearest" == "" ]]; then
+                selected="${list[1]}"
+            fi
+        fi
+
+        if [[ "$selected" == "" ]]; then
+            if [[ ! "$nearest" == "" ]]; then
+                echo "$(tput setaf 3)*:$(tput sgr0) $tag$(tput setaf 3)$nearest$(tput sgr0)"
+            fi
+
+            local i=0
+
+            for item in ${list[@]}; do
+                i=$(expr ${i} + 1)
+                local index="$(tput setaf 1)$i$(tput sgr0): "
+                echo "$index: $item"
+            done
+
+            printf "$(tput setaf 4)choose the point with index: $(tput sgr0)(empty means the first one)"
+            read -r index
+
+            if [[ "$index" == "" ]]; then
+                if [[ ! "$nearest" == "" ]]; then
+                    selected="$nearest"
+                else
+                    selected="${list[1]}"
+                fi
+            else
+                if [ $index -le ${#list[@]} ]; then
+                    selected="${list[$index]}"
+                else
+                    echo "$_TOX_ECHO_PRE: no matching item"
+                    return 1
+                fi
+            fi
+        fi
+
+        if [[ "$selected" == "" ]]; then
+            return 1
+        fi
+
+        if [ $# -eq 1 ]; then
+            _toxe_e "$selected"
+            return 0
+        fi
+
+        _toxe_o "$selected" "$2" "$1"
+    elif [[ "$1" == "." ]]; then
+        _toxe_o "$PWD" "$2"
+    elif [[ "$1" == ".." ]]; then
+        _toxe_o "$(dirname $PWD)" "$2"
+    else
+        local nearest=`_toxc_point_nearest_point "$PWD"`
+        _toxe_o "$nearest" "$1"
     fi
 }

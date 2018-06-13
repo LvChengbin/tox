@@ -90,6 +90,8 @@ tox: switch to /Users/NS/workspace/projects
 
 ### toxc
 
+> toxc is used to manage tox points.
+
 - toxc: show info of tox
 - toxc status: show infomation of current point
 - toxc init @name: to make a dir be a tox point with it's name and points can be anonymous.
@@ -100,9 +102,25 @@ tox: switch to /Users/NS/workspace/projects
 
 ### tox
 
+> tox is used to switch between points and directories
+
 - tox: go to the home dir of current point
 - tox @xx: go to the dir of the point named @xx
 - tox aa: go to the dir named aa in current point
 - tox @xx aa: go to the dir named aa in @xx point
 - tox -: go to the last dir
 - tox ~: go to the home dir
+- tox . abc: to find dir abc from current dir
+- tox .. abc: to find dir abc from the parent dir of current dir
+
+### toxe
+
+> toxe is used to open a file with specified editor quickly, `toxe` has same features with `tox` command.
+
+### config
+
+> each tox point has a `.toxrc` as it's config file, it supports some simple config item:
+
+- point: point name of current point, multiple names should be separated with comma(,)
+- ignore: a directory list which would be ignored while seach files or directories, separated with comma(,) 
+- editor: the editor while using `toxe`, only can be set in ~/.toxrc file
