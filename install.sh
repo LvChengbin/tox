@@ -1,4 +1,6 @@
 #!/bin/bash
 
-mkdir -p "$HOME/.tox"
-curl https://raw.githubusercontent.com/LvChengbin/tox/master/tox -O  "$HOME/.tox/tox"
+mkdir -p "$HOME/.tox" && \
+git clone https://github.com/LvChengbin/tox.git ~/.tox && \
+echo "source ~/.tox/tox.sh" >> "~/.bashrc" && \
+toxc

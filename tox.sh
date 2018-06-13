@@ -23,6 +23,13 @@ function _toxc_map_add() {
     echo "$1=$2" >> "$_TOX_MAP_FILE"
 }
 
+function _toxc_map_index() {
+    local nearest=`_toxc_point_nearest_point "$1"`
+    while read -r line; do
+        _toxc_map_add "$line" "$nearest"
+    done < <(_toxc_point_get_name "$nearest" 1)
+}
+
 function _toxc_map_remove() {
     _toxc_util_valid_global_point_name "$1" || return 1
 
@@ -38,6 +45,17 @@ function _toxc_map_seek() {
             echo "${line#*=}"
         fi
     done < "$_TOX_MAP_FILE"
+}
+
+function _toxc_map_clean() {
+    while read -r line; do
+        local d="${line#*=}"
+
+        if [ -d "$d" ] && [ -f "$d/$_TOX_RC" ]; then
+            echo "$line" 
+        fi
+    done < <(_toxc_map_read "$_TOX_MAP_FILE") > map-clean-output
+    mv map-clean-output "$_TOX_MAP_FILE"
 }
 
 function _toxc_map_read() {
@@ -311,32 +329,16 @@ function _toxc_init() {
 
 function toxc() {
 
+    _toxc_map_index "$PWD"
+
     if [ $# -eq 0 ]; then
         echo "$_TOX_ECHO_PRE: version: $_TOX_VERSION"
         _toxc_c
-
-        if [ ! -f "$PWD/$_TOX_RC" ]; then
-            echo "$_TOX_ECHO_PRE: current dir is not a tox point" 
-
-            local nearest=`_toxc_point_nearest_point "$PWD"`
-
-            if [[ "$nearest" == "" ]]; then
-                echo "$_TOX_ECHO_PRE: current dir is not inside any tox point"
-                return
-            fi
-
-            local name=`_toxc_point_get_name "$nearest/$_TOX_RC"`
-            echo "$_TOX_ECHO_PRE: the nearest point is $nearest: $name"
-        else
-            local name=`_toxc_point_get_name "$PWD/$_TOX_RC"`
-            echo "$_TOX_ECHO_PRE: current point: $name"
-        fi
         return
     fi
 
     case "$1" in
         init)
-
             if [ -f "$PWD/$_TOX_RC" ]; then
                 echo "$_TOX_ECHO_PRE: current dir is already a tox point"
                 echo "$_TOX_ECHO_PRE: to use "toxc add-name" to add name to current point"
@@ -361,6 +363,24 @@ function toxc() {
                 echo "$_TOX_ECHO_PRE: anonymous point has been created."
             else
                 echo "$_TOX_ECHO_PRE: point $point has been created." 
+            fi
+            ;;
+        status)
+            if [ ! -f "$PWD/$_TOX_RC" ]; then
+                echo "$_TOX_ECHO_PRE: current dir is not a tox point" 
+
+                local nearest=`_toxc_point_nearest_point "$PWD"`
+
+                if [[ "$nearest" == "" ]]; then
+                    echo "$_TOX_ECHO_PRE: current dir is not inside any tox point"
+                    return
+                fi
+
+                local name=`_toxc_point_get_name "$nearest/$_TOX_RC"`
+                echo "$_TOX_ECHO_PRE: the nearest point is $nearest: $name"
+            else
+                local name=`_toxc_point_get_name "$PWD/$_TOX_RC"`
+                echo "$_TOX_ECHO_PRE: current point: $name"
             fi
             ;;
         add-name)
@@ -421,6 +441,7 @@ function toxc() {
             echo "$_TOX_ECHO_PRE: this point has been removed."
             ;;
         map)
+            _toxc_map_clean
             _toxc_map_read "$_TOX_MAP_FILE"
             ;;
         *)
@@ -529,7 +550,7 @@ function _tox_to() {
         echo "$index$res"
     done
 
-    printf "choose the dir with index: (empty means the first one)"
+    printf "$(tput setaf 4)choose the dir with index: $(tput sgr0)(empty means the first one)"
     read -r index
 
     if [[ "$index" == "" ]]; then
@@ -542,7 +563,7 @@ function _tox_to() {
     fi
 
     if [ $index -le ${#results[@]} ]; then
-        _tox_to_absolute="${results[$index]}"
+        _tox_to_absolute "${results[$index]}"
         return 0
     fi
 
@@ -551,6 +572,9 @@ function _tox_to() {
 }
 
 function tox() {
+
+    _toxc_map_index "$PWD"
+
     if [ $# -eq 0 ]; then
         local nearest=`_toxc_point_nearest_point $PWD`
         if [[ "$nearest" == "" ]]; then
@@ -601,17 +625,18 @@ function tox() {
 
         if [[ "$selected" == "" ]]; then
             if [[ ! "$nearest" == "" ]]; then
-                echo "*: $nearest"
+                echo "$(tput setaf 3)*:$(tput sgr0) $tag$(tput setaf 3)$nearest$(tput sgr0)"
             fi
 
             local i=0
 
             for item in ${list[@]}; do
                 i=$(expr ${i} + 1)
-                echo "$i: $item"
+                local index="$(tput setaf 1)$i$(tput sgr0): "
+                echo "$index: $item"
             done
 
-            printf "choose the point with index: (empty means the first one)"
+            printf "$(tput setaf 4)choose the point with index: $(tput sgr0)(empty means the first one)"
             read -r index
 
             if [[ "$index" == "" ]]; then
