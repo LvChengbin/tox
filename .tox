@@ -1,3 +1,0 @@
-# setting ignore files
-TOX_POINT=
-TOX_IGNORE=node_modules,logs,.*
