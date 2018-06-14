@@ -1,6 +1,6 @@
 #!/bin/bash
 
-_TOX_VERSION=0.0.0
+_TOX_VERSION=0.0.1
 _TOX_HOME="$HOME"
 _TOX_RC=".toxrc"
 _TOX_HOME_RC="$_TOX_HOME/$_TOX_RC"

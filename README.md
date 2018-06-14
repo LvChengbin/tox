@@ -15,6 +15,7 @@ curl -L https://raw.githubusercontent.com/LvChengbin/tox/master/install.sh | bas
 ```
 git clone https://github.com/LvChengbin/tox.git ~/.tox
 echo 'source ~/.tox/tox.sh' >> ~/.bashrc
+source ~/.bashrc
 toxc
 ```
 
