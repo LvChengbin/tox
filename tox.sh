@@ -525,7 +525,7 @@ function _tox_to() {
     local tag=""
 
     if [[ ! $3 == "" ]]; then
-        tag="$(tput setaf 4)$3$(tput sgr0)/" 
+        tag="$(tput setaf 3)$3$(tput sgr0)/" 
     fi
 
     if [[ ! "$best" == "" ]]; then
@@ -661,7 +661,7 @@ function tox() {
         _tox_to "$(dirname $PWD)" "$2"
     else
         local nearest=`_toxc_point_nearest_point "$PWD"`
-        _tox_to "$nearest" "$1"
+        _tox_to "$nearest" "$1" "`_toxc_point_get_name $nearest`"
     fi
 }
 
