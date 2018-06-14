@@ -672,7 +672,11 @@ function tox() {
 #################################################################################
 function _toxe_e() {
     local editor=`_toxc_point_item "$_TOX_HOME_RC" "editor"`
-    eval "$editor $1"
+    if [[ "$1" == "" ]]; then
+        eval "$editor"
+    else
+        eval "$editor $1"
+    fi
 }
 
 function _toxe_search() {
@@ -775,7 +779,7 @@ function _toxe_o() {
 
 function toxe() {
     if [ $# -eq 0 ]; then
-        _toxe_e "$PWD"
+        _toxe_e
         return
     fi
 
