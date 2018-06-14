@@ -24,6 +24,9 @@ function _toxc_map_add() {
 }
 
 function _toxc_map_index() {
+    if [ ! -d "$_TOX_MAP_FILE" ]; then
+        return
+    fi
     local nearest=`_toxc_point_nearest_point "$1"`
     while read -r line; do
         _toxc_map_add "$line" "$nearest"
@@ -293,11 +296,6 @@ function _toxc_c() {
     # to create map file
     if [ ! -f "$_TOX_MAP_FILE" ]; then
         touch "$_TOX_MAP_FILE" || return 1
-    fi
-
-    # to create rc file in home dir
-    if [ ! -f "$_TOX_HOME_RC" ]; then
-        touch "$_TOX_HOME_RC" || return 1
     fi
 
     _toxc_init "$_TOX_HOME_RC" "@@@@" || return 1
