@@ -2,24 +2,11 @@
 
 `tox` is a command line tool for helping you to switch in multiple directories more faster and more convenient. It is more powerful than the native `cd` command.
 
-## Installation
-
-### Using a Simple installer
-
-```
-curl -L https://raw.githubusercontent.com/LvChengbin/tox/master/install.sh | bash
-```
-
-### Using git
-
-```
-git clone https://github.com/LvChengbin/tox.git ~/.tox
-echo 'source ~/.tox/tox.sh' >> ~/.bashrc
-source ~/.bashrc
-toxc
-```
-
 ## Usage
+
+```
+source ./tox.sh
+```
 
 The `tox` has two command, `toxc` and `tox`. The `toxc` is used to manage `tox` points, and `tox` is used to switch between points or directories.
 
